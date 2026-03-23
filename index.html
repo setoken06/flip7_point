@@ -135,6 +135,7 @@
       padding: 10px 0;
       font-size: 1rem;
       font-weight: bold;
+      touch-action: manipulation;
       border: 1px solid rgba(255, 255, 255, 0.4);
       border-radius: 8px;
       background: rgba(255, 255, 255, 0.4);
@@ -161,6 +162,7 @@
       padding: 10px 0;
       font-size: 0.85rem;
       font-weight: bold;
+      touch-action: manipulation;
       border: none;
       border-radius: 8px;
       cursor: pointer;
@@ -168,7 +170,7 @@
     }
     .action-btn:active { transform: scale(0.97); }
     .action-btn.undo {
-      background: rgba(155, 48, 255, 0.45);
+      background: rgba(155, 48, 255, 0.75);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       color: #fff;
@@ -179,7 +181,7 @@
       cursor: not-allowed;
     }
     .action-btn.reset {
-      background: rgba(233, 80, 120, 0.6);
+      background: rgba(233, 80, 120, 0.85);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
       color: #fff;
