@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>7flips 得点表</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a2e url('bg.png') center/cover no-repeat fixed;
+      color: #3a2a4a;
+      height: 100dvh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* メインレイアウト: 上=スコア, 下=操作 */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      padding: 8px;
+      gap: 6px;
+    }
+
+    /* 上部: ヘッダー + スコアボード */
+    .top-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      flex-shrink: 0;
+    }
+    h1 {
+      font-size: 1.1rem;
+      color: #9b30ff;
+      white-space: nowrap;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+    .player-setup {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .player-setup label { font-size: 0.8rem; font-weight: 600; }
+    .player-setup select {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      font-size: 0.9rem;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #3a2a4a;
+      user-select: auto;
+      -webkit-user-select: auto;
+    }
+
+    /* 得点表 */
+    .scoreboard {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .player-card {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255, 255, 255, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-radius: 12px;
+      padding: 6px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .player-card.selected {
+      border-color: #9b30ff;
+      box-shadow: 0 0 14px rgba(155, 48, 255, 0.4);
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .player-card .score {
+      font-size: 5rem;
+      font-weight: bold;
+      color: #3a2a4a;
+      line-height: 1.2;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+    }
+    .player-card .name-input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid rgba(100, 60, 140, 0.3);
+      color: #3a2a4a;
+      font-size: 2rem;
+      text-align: center;
+      width: 80%;
+      outline: none;
+      margin: 0 auto 2px;
+      display: block;
+      user-select: auto;
+      -webkit-user-select: auto;
+    }
+    .player-card .name-input:focus {
+      border-bottom-color: #9b30ff;
+    }
+
+    /* 下部: 得点ボタン + アクション */
+    .bottom-pane {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .score-buttons {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5px;
+    }
+    .score-btn {
+      padding: 10px 0;
+      font-size: 1rem;
+      font-weight: bold;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #3a2a4a;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .score-btn:active {
+      background: rgba(155, 48, 255, 0.5);
+      color: #fff;
+      transform: scale(0.95);
+    }
+
+    /* アクションボタン */
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .action-btn {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .action-btn:active { transform: scale(0.97); }
+    .action-btn.undo {
+      background: rgba(155, 48, 255, 0.45);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #fff;
+      border: 1px solid rgba(155, 48, 255, 0.3);
+    }
+    .action-btn.undo:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .action-btn.reset {
+      background: rgba(233, 80, 120, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #fff;
+      border: 1px solid rgba(233, 80, 120, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-pane">
+      <div class="header">
+        <h1>7flips</h1>
+        <div class="player-setup">
+          <label for="playerCount">人数:</label>
+          <select id="playerCount">
+            <option value="1">1人</option>
+            <option value="2">2人</option>
+            <option value="3">3人</option>
+            <option value="4" selected>4人</option>
+            <option value="5">5人</option>
+            <option value="6">6人</option>
+          </select>
+        </div>
+      </div>
+      <div class="scoreboard" id="scoreboard"></div>
+    </div>
+
+    <div class="bottom-pane">
+      <div class="score-buttons" id="scoreButtons"></div>
+      <div class="actions">
+        <button class="action-btn undo" id="undoBtn" disabled>戻る</button>
+        <button class="action-btn reset" id="resetBtn">リセット</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = '7flips_history';
+    const MAX_HISTORY = 200;
+
+    let playerCount = 4;
+    let scores = [];
+    let names = [];
+    let selectedPlayer = 0;
+    let history = [];
+
+    function defaultNames(count) {
+      return Array.from({ length: count }, (_, i) => `P${i + 1}`);
+    }
+
+    // --- 初期化 ---
+    function init() {
+      loadHistory();
+      if (history.length > 0) {
+        const last = history[history.length - 1];
+        playerCount = last.playerCount;
+        scores = [...last.scores];
+        names = last.names ? [...last.names] : defaultNames(playerCount);
+        selectedPlayer = last.selectedPlayer;
+        document.getElementById('playerCount').value = playerCount;
+      } else {
+        scores = Array(playerCount).fill(0);
+        names = defaultNames(playerCount);
+        pushHistory();
+      }
+      renderScoreboard();
+      renderScoreButtons();
+      updateUndoBtn();
+    }
+
+    // --- 履歴管理 ---
+    function pushHistory() {
+      history.push({
+        scores: [...scores],
+        playerCount,
+        selectedPlayer,
+        names: [...names],
+      });
+      if (history.length > MAX_HISTORY) {
+        history = history.slice(history.length - MAX_HISTORY);
+      }
+      saveHistory();
+      updateUndoBtn();
+    }
+
+    function saveHistory() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      } catch (e) {
+        history = history.slice(Math.floor(history.length / 2));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+      }
+    }
+
+    function loadHistory() {
+      try {
+        const data = localStorage.getItem(STORAGE_KEY);
+        if (data) history = JSON.parse(data);
+      } catch (e) {
+        history = [];
+      }
+    }
+
+    function updateUndoBtn() {
+      document.getElementById('undoBtn').disabled = history.length <= 1;
+    }
+
+    // --- 描画 ---
+    function renderScoreboard() {
+      const board = document.getElementById('scoreboard');
+
+      board.innerHTML = '';
+      for (let i = 0; i < playerCount; i++) {
+        const card = document.createElement('div');
+        card.className = 'player-card' + (i === selectedPlayer ? ' selected' : '');
+        const nameVal = names[i] || `P${i + 1}`;
+        card.innerHTML = `
+          <input class="name-input" value="${nameVal}" data-index="${i}" maxlength="10">
+          <div class="score">${scores[i] || 0}</div>
+        `;
+        card.addEventListener('click', (e) => {
+          if (e.target.classList.contains('name-input')) return;
+          selectedPlayer = i;
+          renderScoreboard();
+        });
+        board.appendChild(card);
+      }
+
+      board.querySelectorAll('.name-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          names[idx] = e.target.value;
+        });
+        input.addEventListener('blur', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          names[idx] = e.target.value;
+          // 名前変更を履歴に反映（最新の履歴を更新）
+          if (history.length > 0) {
+            history[history.length - 1].names = [...names];
+            saveHistory();
+          }
+        });
+        input.addEventListener('focus', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          if (selectedPlayer !== idx) {
+            selectedPlayer = idx;
+            // 選択状態だけ更新（再描画せずフォーカスを維持）
+            board.querySelectorAll('.player-card').forEach((c, j) => {
+              c.classList.toggle('selected', j === idx);
+            });
+          }
+        });
+      });
+    }
+
+    function renderScoreButtons() {
+      const container = document.getElementById('scoreButtons');
+      container.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'score-btn';
+        btn.textContent = `+${i}`;
+        btn.addEventListener('click', () => addScore(i));
+        container.appendChild(btn);
+      }
+    }
+
+    // --- 操作 ---
+    function addScore(value) {
+      if (selectedPlayer < 0 || selectedPlayer >= playerCount) return;
+      scores[selectedPlayer] += value;
+      pushHistory();
+      renderScoreboard();
+    }
+
+    document.getElementById('undoBtn').addEventListener('click', () => {
+      if (history.length <= 1) return;
+      history.pop();
+      saveHistory();
+      const prev = history[history.length - 1];
+      playerCount = prev.playerCount;
+      scores = [...prev.scores];
+      names = prev.names ? [...prev.names] : defaultNames(playerCount);
+      selectedPlayer = prev.selectedPlayer;
+      document.getElementById('playerCount').value = playerCount;
+      renderScoreboard();
+      updateUndoBtn();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      scores = Array(playerCount).fill(0);
+      pushHistory();
+      renderScoreboard();
+    });
+
+    document.getElementById('playerCount').addEventListener('change', (e) => {
+      const newCount = parseInt(e.target.value);
+      const newScores = Array(newCount).fill(0);
+      const newNames = defaultNames(newCount);
+      for (let i = 0; i < Math.min(playerCount, newCount); i++) {
+        newScores[i] = scores[i];
+        newNames[i] = names[i] || newNames[i];
+      }
+      playerCount = newCount;
+      scores = newScores;
+      names = newNames;
+      if (selectedPlayer >= playerCount) selectedPlayer = 0;
+      pushHistory();
+      renderScoreboard();
+    });
+
+    init();
+  </script>
+</body>
+</html>
